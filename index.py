@@ -3,8 +3,8 @@
 
 """
 API to extract keywords from a text.
-The algorithm extracts the main nominal groups (relevant keywords) and, for each one,
-attribute a score based on multiple parameters including the number of occurrences.
+The algorithm extracts the main nominal groups (relevant keywords) from the text and, for each one,
+attributes a score based on multiple parameters including the number of occurrences.
 """
 
 __author__ = "Anthony Sigogne"
@@ -15,7 +15,7 @@ __version__ = "1.0"
 
 # libraries of tool
 from collections import Counter
-from pattern.search import search,match
+from pattern.search import search, match
 from flask import Flask, request, jsonify, url_for, render_template
 app = Flask(__name__)
 
@@ -27,14 +27,6 @@ def load_resources(data) :
         from pattern.fr import parse, tree, ngrams
     elif data["language"] == "en" :
         from pattern.en import parse, tree, ngrams
-    elif data["language"] == "es" :
-        from pattern.es import parse, tree, ngrams
-    elif data["language"] == "de" :
-        from pattern.de import parse, tree, ngrams
-    elif data["language"] == "it" :
-        from pattern.it import parse, tree, ngrams
-    elif data["language"] == "nl" :
-        from pattern.nl import parse, tree, ngrams
     return parse, tree, ngrams
 
 @app.route("/keywords", methods=['POST'])
@@ -45,7 +37,7 @@ def keyword_mining():
     Method : POST
     Form data :
         - text : the text to analyze
-        - lang : language of text ("fr" or "en")
+        - language : language of text ("fr" or "en")
     Return a JSON dictionary : {"keywords":[list of keywords]}
     """
     # get POST data and load language resources
