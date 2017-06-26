@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 
 """
-API to extract keywords from a text (document, press article, ...).
-The algorithm extracts the main nominal groups (relevant keywords) and, for each one, attribute a score based on multiple parameters including the number of occurrences.
+API to extract keywords from a text.
+The algorithm extracts the main nominal groups (relevant keywords) and, for each one,
+attribute a score based on multiple parameters including the number of occurrences.
 """
 
 __author__ = "Anthony Sigogne"
@@ -47,10 +48,15 @@ def keyword_mining():
         - lang : language of text ("fr" or "en")
     Return a JSON dictionary : {"keywords":[list of keywords]}
     """
+    # get POST data and load language resources
     data = dict((key, request.form.get(key)) for key in request.form.keys())
     parse, tree, ngrams = load_resources(data)
+
+    # tag text
     data["text_tagged"] = parse(data["text"].replace("\n",".\n").replace(u"»"," ").replace(u"«"," "), relations=True, lemmata=True)
     t = tree(data["text_tagged"])
+
+    # extract keywords
     keywords = Counter()
     GN = {
         "fr":['CD? NN|NNS|NNP+ IN NN|NNS|NNP+ JJ','NN|CD? NN|NNS|NNP+ IN NN|NNS|NNP+','NNP+','NN|NNS|NNP+ JJ'],
@@ -62,12 +68,14 @@ def keyword_mining():
                 continue
             keywords[match.string] += match.string.count(" ")+1
 
+    # filter keywords (keywords in another are removed)
     for kw,v in keywords.items() :
         for kw2,v2 in keywords.items() :
             if kw != kw2 and kw in kw2 :
                 keywords[kw2] += 1
                 del keywords[kw]
 
+    # return the final list of keywords
     return jsonify(keywords=keywords.keys())
 
 @app.route("/")
