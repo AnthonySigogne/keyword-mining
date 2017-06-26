@@ -23,10 +23,14 @@ def load_resources(data) :
     """
     Load linguistic resources for a language.
     """
+    if "language" not in data :
+        raise InvalidUsage('No language specified in POST data')
     if data["language"] == "fr" :
         from pattern.fr import parse, tree, ngrams
     elif data["language"] == "en" :
         from pattern.en import parse, tree, ngrams
+    else :
+        raise InvalidUsage('Unsupported language')
     return parse, tree, ngrams
 
 @app.route("/keywords", methods=['POST'])
@@ -45,6 +49,8 @@ def keyword_mining():
     parse, tree, ngrams = load_resources(data)
 
     # tag text
+    if "text" not in data :
+        raise InvalidUsage('No text specified in POST data')
     data["text_tagged"] = parse(data["text"].replace("\n",".\n").replace(u"»"," ").replace(u"«"," "), relations=True, lemmata=True)
     t = tree(data["text_tagged"])
 
@@ -74,8 +80,7 @@ def keyword_mining():
 def helper():
     """
     URL : /
-    Helper that list all methods of tool.
-    Return a simple text.
+    Helper that list all services of API.
     """
     # print module docstring
     output = [__doc__.replace("\n","<br/>"),]
@@ -91,3 +96,30 @@ def helper():
         output.append(app.view_functions[rule.endpoint].__doc__.replace("\n","<br/>"))
 
     return "<br/>".join(output)
+
+class InvalidUsage(Exception):
+    """
+    Custom invalid usage exception.
+    """
+    status_code = 400
+
+    def __init__(self, message, status_code=None, payload=None):
+        Exception.__init__(self)
+        self.message = message
+        if status_code is not None:
+            self.status_code = status_code
+        self.payload = payload
+
+    def to_dict(self):
+        rv = dict(self.payload or ())
+        rv['message'] = self.message
+        return rv
+
+@app.errorhandler(InvalidUsage)
+def handle_invalid_usage(error):
+    """
+    JSON version of invalid usage exception
+    """
+    response = jsonify(error.to_dict())
+    response.status_code = error.status_code
+    return response
