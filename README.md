@@ -1,7 +1,8 @@
 # keyword-mining
 API to extract keywords from a text.
 
-The algorithm extracts the main nominal groups (relevant keywords) from the text and, for each one, attribute a score based on multiple parameters including the number of occurrences.
+The algorithm extracts all nominal groups (candidate keywords) from the text and, for each one, attributes a score based on multiple parameters including the number of occurrences.
+The final list of keywords is composed of best-scored nominal groups (maximum 15).
 
 ## INSTALL
 ```

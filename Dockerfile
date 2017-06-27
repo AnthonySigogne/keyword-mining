@@ -1,5 +1,7 @@
 FROM python:2.7-alpine
 
+RUN apk add --no-cache gcc g++ make linux-headers libxml2 libxslt-dev
+
 ENV FLASK_APP index.py
 
 WORKDIR ./

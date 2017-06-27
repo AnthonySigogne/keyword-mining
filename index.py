@@ -60,7 +60,10 @@ def keyword_mining_url():
         """
         Crawl url and extract main text content (no boilerplate).
         """
-        r = requests.get(data["url"])
+        try :
+            r = requests.get(data["url"])
+        except :
+            raise InvalidUsage("URL is invalid or has no text inside")
         paragraphs = justext.justext(r.text, justext.get_stoplist("French" if data["language"] == "fr" else "English"))
         main_content = ". ".join([paragraph.text for paragraph in paragraphs if not paragraph.is_boilerplate])
         data["text"] = main_content
