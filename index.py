@@ -14,10 +14,98 @@ __license__ = "MIT"
 __version__ = "1.0"
 
 # libraries of tool
+import justext
+import requests
 from collections import Counter
 from pattern.search import search, match
 from flask import Flask, request, jsonify, url_for, render_template
 app = Flask(__name__)
+
+@app.route("/keywords", methods=['POST'])
+def keyword_mining_text():
+    """
+    URL : /keywords
+    Extract keywords from a text.
+    Method : POST
+    Form data :
+        - text : the text to analyze
+        - language : language of text ("fr" or "en")
+    Return a JSON dictionary : {"keywords":[list of keywords]}
+    """
+    # get POST data and load language resources
+    data = dict((key, request.form.get(key)) for key in request.form.keys())
+    if "text" not in data :
+        raise InvalidUsage('No text specified in POST data')
+    load_resources(data)
+
+    # analyze text and extract keywords
+    keyword_mining(data)
+
+    # return final list of keywords
+    return jsonify(keywords=data["keywords"].keys())
+
+@app.route("/keywords_at_url", methods=['POST'])
+def keyword_mining_url():
+    """
+    URL : /keywords_at_url
+    Extract keywords from the text of a web page.
+    Method : POST
+    Form data :
+        - url : the url to analyze
+        - language : language of text ("fr" or "en")
+    Return a JSON dictionary : {"keywords":[list of keywords]}
+    """
+    def crawl_url(data) :
+        """
+        Crawl url and extract main text content (no boilerplate).
+        """
+        r = requests.get(data["url"])
+        paragraphs = justext.justext(r.text, justext.get_stoplist("French" if data["language"] == "fr" else "English"))
+        main_content = ". ".join([paragraph.text for paragraph in paragraphs if not paragraph.is_boilerplate])
+        data["text"] = main_content
+
+    # get POST data and load language resources
+    data = dict((key, request.form.get(key)) for key in request.form.keys())
+    if "url" not in data :
+        raise InvalidUsage('No url specified in POST data')
+    load_resources(data)
+
+    # get main text from url
+    crawl_url(data)
+
+    # analyze text and extract keywords
+    keyword_mining(data)
+
+    # return final list of keywords
+    return jsonify(keywords=data["keywords"].keys())
+
+def keyword_mining(data) :
+    """
+    Extract keywords from a text.
+    """
+    # tag text
+    data["text_tagged"] = data["parse"](data["text"].replace("\n",".\n").replace(u"»"," ").replace(u"«"," ").replace("["," "), relations=True, lemmata=True)
+    t = data["tree"](data["text_tagged"])
+
+    # first, extract all keywords
+    keywords = Counter()
+    GN = {
+        "fr":['CD? NN|NNS|NNP+ IN NN|NNS|NNP+ JJ','NN|CD? NN|NNS|NNP+ IN NN|NNS|NNP+','NNP+','NN|NNS|NNP+ JJ'],
+        "en":['NN|NNS|NNP+ IN JJ NN|NNS|NNP','NN|NNS|NNP+ IN NN|NNS|NNP+','NNP+','JJ NN|NNS|NNP+','NN VBG NN']
+    }
+    for p in GN[data["language"]] :
+        for match in search(p, t):
+            if "@" in match.string or ";" in match.string or match.string.count(" ") > 6 :
+                continue
+            keywords[match.string] += match.string.count(" ")+1
+
+    # then, filter keywords (keywords in another are removed)
+    for kw,v in keywords.items() :
+        for kw2,v2 in keywords.items() :
+            if kw != kw2 and kw.lower() in kw2.lower() and v2 >= v:
+                keywords[kw2] += 1
+                del keywords[kw]
+    data["keywords"] = keywords
 
 def load_resources(data) :
     """
@@ -31,50 +119,14 @@ def load_resources(data) :
         from pattern.en import parse, tree, ngrams
     else :
         raise InvalidUsage('Unsupported language')
-    return parse, tree, ngrams
+    data.update({
+        "parse" : parse,
+        "tree" : tree,
+        "ngrams" : ngrams
+    })
 
-@app.route("/keywords", methods=['POST'])
-def keyword_mining():
-    """
-    URL : /keywords
-    Extract keywords from a text.
-    Method : POST
-    Form data :
-        - text : the text to analyze
-        - language : language of text ("fr" or "en")
-    Return a JSON dictionary : {"keywords":[list of keywords]}
-    """
-    # get POST data and load language resources
-    data = dict((key, request.form.get(key)) for key in request.form.keys())
-    parse, tree, ngrams = load_resources(data)
 
-    # tag text
-    if "text" not in data :
-        raise InvalidUsage('No text specified in POST data')
-    data["text_tagged"] = parse(data["text"].replace("\n",".\n").replace(u"»"," ").replace(u"«"," "), relations=True, lemmata=True)
-    t = tree(data["text_tagged"])
-
-    # extract keywords
-    keywords = Counter()
-    GN = {
-        "fr":['CD? NN|NNS|NNP+ IN NN|NNS|NNP+ JJ','NN|CD? NN|NNS|NNP+ IN NN|NNS|NNP+','NNP+','NN|NNS|NNP+ JJ'],
-        "en":['NN|NNS|NNP+ IN JJ NN|NNS|NNP','NN|NNS|NNP+ IN NN|NNS|NNP+','NNP+','JJ NN|NNS|NNP+','NN VBG NN']
-    }
-    for p in GN[data["language"]] :
-        for match in search(p, t):
-            if "@" in match.string or ";" in match.string or match.string.count(" ") > 6 :
-                continue
-            keywords[match.string] += match.string.count(" ")+1
-
-    # filter keywords (keywords in another are removed)
-    for kw,v in keywords.items() :
-        for kw2,v2 in keywords.items() :
-            if kw != kw2 and kw in kw2 :
-                keywords[kw2] += 1
-                del keywords[kw]
-
-    # return the final list of keywords
-    return jsonify(keywords=keywords.keys())
+# -- HELPER AND MISC -- #
 
 @app.route("/")
 def helper():

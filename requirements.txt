@@ -1,2 +1,4 @@
 Flask
 pattern
+jusText==2.2.0
+requests
