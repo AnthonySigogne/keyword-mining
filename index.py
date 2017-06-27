@@ -41,8 +41,9 @@ def keyword_mining_text():
     # analyze text and extract keywords
     keyword_mining(data)
 
-    # return final list of keywords
-    return jsonify(keywords=data["keywords"].keys())
+    # get only the 15 best scored keywords
+    keywords = [kw for kw, score in data["keywords"].most_common(15)]
+    return jsonify(keywords=keywords)
 
 @app.route("/keywords_at_url", methods=['POST'])
 def keyword_mining_url():
@@ -76,8 +77,9 @@ def keyword_mining_url():
     # analyze text and extract keywords
     keyword_mining(data)
 
-    # return final list of keywords
-    return jsonify(keywords=data["keywords"].keys())
+    # get only the 15 best scored keywords
+    keywords = [kw for kw, score in data["keywords"].most_common(15)]
+    return jsonify(keywords=keywords)
 
 def keyword_mining(data) :
     """
