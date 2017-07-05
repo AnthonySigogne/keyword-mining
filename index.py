@@ -44,9 +44,10 @@ def keywords_from_text():
     keywords = language.keyword_mining(data["text"])
 
     # limit the number of keywords
+    total = len(keywords)
     hits = int(data.get("hits", 100))
     keywords = [kw for kw, score in keywords.most_common(hits)]
-    return jsonify(keywords=keywords)
+    return jsonify(keywords=keywords, total=total)
 
 @app.route("/keywords_from_url", methods=['POST'])
 def keywords_from_url():
@@ -72,6 +73,7 @@ def keywords_from_url():
     keywords = language.keyword_mining(text_content)
 
     # limit the number of keywords
+    total = len(keywords)
     hits = int(data.get("hits", 100))
     keywords = [kw for kw, score in keywords.most_common(hits)]
-    return jsonify(keywords=keywords)
+    return jsonify(keywords=keywords, total=total)
