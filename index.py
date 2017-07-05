@@ -67,6 +67,8 @@ def keywords_from_url():
 
     # crawl url, detect main language and get main text from url
     url_data = url.crawl(data["url"])
+    if not url_data :
+        raise InvalidUsage('No content to analyze')
     text_content = url.extract_content(url_data.text)
 
     # analyze text and extract keywords
