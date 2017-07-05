@@ -1,5 +1,7 @@
 # keyword-mining
-API to extract keywords from a text.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) ![Python 2.7](https://img.shields.io/badge/python-3.5-blue.svg)
+
+API - extract keywords from a text or a web page.
 
 The algorithm extracts all nominal groups (candidate keywords) from the text and, for each one, attributes a score based on multiple parameters including the number of occurrences.
 The final list of keywords is composed of best-scored nominal groups.
