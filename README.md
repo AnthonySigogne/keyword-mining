@@ -155,9 +155,9 @@ Return the sublist of matching URLs sorted by relevance, and the total of matchi
 
 
 ## FUTURE FEATURES
-* index more page features like keywords,...
-* better scoring function
-* filter bad results
+* more languages
+* compatibility with Python3
+* filter bad keywords (verbs,...)
 
 ## LICENCE
 MIT
